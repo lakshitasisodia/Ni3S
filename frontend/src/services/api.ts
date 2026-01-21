@@ -1,4 +1,9 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+// API Configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// ============================================
+// TypeScript Interfaces
+// ============================================
 
 export interface NationalOverview {
   total_enrollments: number;
@@ -9,6 +14,7 @@ export interface NationalOverview {
   num_states: number;
   num_districts: number;
   coverage_gap: number;
+  latest_date: string;
 }
 
 export interface TrendData {
@@ -141,63 +147,94 @@ export interface StateInsights {
   generated_at: string;
 }
 
+// ============================================
+// API Service Class
+// ============================================
+
 class ApiService {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = API_BASE_URL;
+  }
+
   async getNationalOverview(): Promise<NationalOverview> {
-    const response = await fetch(`${API_BASE_URL}/national/overview`);
+    const response = await fetch(`${this.baseUrl}/api/national/overview`);
+    if (!response.ok) throw new Error('Failed to fetch national overview');
     return response.json();
   }
 
   async getNationalTrends(): Promise<NationalTrends> {
-    const response = await fetch(`${API_BASE_URL}/national/trends`);
+    const response = await fetch(`${this.baseUrl}/api/national/trends`);
+    if (!response.ok) throw new Error('Failed to fetch national trends');
     return response.json();
   }
 
   async getStates(): Promise<{ states: string[] }> {
-    const response = await fetch(`${API_BASE_URL}/states`);
+    const response = await fetch(`${this.baseUrl}/api/states`);
+    if (!response.ok) throw new Error('Failed to fetch states');
     return response.json();
   }
 
   async getDistricts(state: string): Promise<{ state: string; districts: string[] }> {
-    const response = await fetch(`${API_BASE_URL}/states/${encodeURIComponent(state)}/districts`);
+    const response = await fetch(
+      `${this.baseUrl}/api/states/${encodeURIComponent(state)}/districts`
+    );
+    if (!response.ok) throw new Error(`Failed to fetch districts for ${state}`);
     return response.json();
   }
 
   async getStateOverview(state: string): Promise<StateOverview> {
-    const response = await fetch(`${API_BASE_URL}/states/${encodeURIComponent(state)}/overview`);
+    const response = await fetch(
+      `${this.baseUrl}/api/states/${encodeURIComponent(state)}/overview`
+    );
+    if (!response.ok) throw new Error(`Failed to fetch state overview for ${state}`);
     return response.json();
   }
 
   async getDistrictFull(state: string, district: string): Promise<DistrictFull> {
     const response = await fetch(
-      `${API_BASE_URL}/districts/${encodeURIComponent(state)}/${encodeURIComponent(district)}`
+      `${this.baseUrl}/api/districts/${encodeURIComponent(state)}/${encodeURIComponent(district)}`
     );
+    if (!response.ok) throw new Error(`Failed to fetch district data for ${district}, ${state}`);
     return response.json();
   }
 
   async getRiskRankings(limit: number = 50): Promise<{ high_risk_districts: RiskDistrictItem[] }> {
-    const response = await fetch(`${API_BASE_URL}/risk/rankings?limit=${limit}`);
+    const response = await fetch(`${this.baseUrl}/api/risk/rankings?limit=${limit}`);
+    if (!response.ok) throw new Error('Failed to fetch risk rankings');
     return response.json();
   }
 
   async getRiskHeatmap(): Promise<{ heatmap_data: HeatmapItem[] }> {
-    const response = await fetch(`${API_BASE_URL}/risk/heatmap`);
+    const response = await fetch(`${this.baseUrl}/api/risk/heatmap`);
+    if (!response.ok) throw new Error('Failed to fetch risk heatmap');
     return response.json();
   }
 
   async getRiskDistribution(): Promise<RiskDistribution> {
-    const response = await fetch(`${API_BASE_URL}/risk/distribution`);
+    const response = await fetch(`${this.baseUrl}/api/risk/distribution`);
+    if (!response.ok) throw new Error('Failed to fetch risk distribution');
     return response.json();
   }
 
   async getPolicyInsights(): Promise<PolicyInsights> {
-    const response = await fetch(`${API_BASE_URL}/insights/policy`);
+    const response = await fetch(`${this.baseUrl}/api/insights/policy`);
+    if (!response.ok) throw new Error('Failed to fetch policy insights');
     return response.json();
   }
 
   async getStateInsights(state: string): Promise<StateInsights> {
-    const response = await fetch(`${API_BASE_URL}/insights/state/${encodeURIComponent(state)}`);
+    const response = await fetch(
+      `${this.baseUrl}/api/insights/state/${encodeURIComponent(state)}`
+    );
+    if (!response.ok) throw new Error(`Failed to fetch state insights for ${state}`);
     return response.json();
   }
 }
 
+// Export a single instance
 export const api = new ApiService();
+
+// Also export the class if needed elsewhere
+export default ApiService;
