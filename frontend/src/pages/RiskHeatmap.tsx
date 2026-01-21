@@ -57,11 +57,11 @@ function HeatmapGrid({ items }: { items: HeatmapItem[] }) {
     return 'bg-green-500 hover:bg-green-600';
   };
   
-  const getTextColor = (category: string) => {
-    if (category === 'High Risk') return 'text-red-900';
-    if (category === 'Medium Risk') return 'text-yellow-900';
-    return 'text-green-900';
-  };
+  // const getTextColor = (category: string) => {
+  //   if (category === 'High Risk') return 'text-red-900';
+  //   if (category === 'Medium Risk') return 'text-yellow-900';
+  //   return 'text-green-900';
+  // };
   
   return (
     <div className="bg-white rounded-lg shadow p-6">

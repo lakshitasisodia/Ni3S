@@ -87,7 +87,7 @@ function TrendsChart({ trends }: { trends: NationalTrends['trends'] }) {
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Penetration Rate Trend</h3>
       <div className="space-y-2">
-        {recentTrends.map((trend, index) => {
+        {recentTrends.map((trend) => {
           const barWidth = maxPenetration > 0 ? (trend.penetration_rate / maxPenetration * 100) : 0;
           
           return (
