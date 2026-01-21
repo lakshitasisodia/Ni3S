@@ -158,16 +158,21 @@ class AnalyticsEngine:
             'latest_date': latest_date.strftime('%Y-%m-%d')
         }
     
+   
     def get_national_trends(self) -> Dict[str, Any]:
-        """Get time series of national enrollment trends"""
-        
         time_series = self.master_data.groupby('date').agg({
             'total_enrollments': 'sum',
-            'total_population': 'sum',
-            'penetration_rate': 'mean'
+            'total_population': 'sum'
         }).reset_index()
         
         time_series = time_series.sort_values('date')
+        
+        # Calculate penetration rate from aggregated data (not mean of district rates)
+        time_series['penetration_rate'] = np.where(
+            time_series['total_population'] > 0,
+            time_series['total_enrollments'] / time_series['total_population'],
+            0
+        )
         
         # Cap penetration rate at 100%
         time_series['penetration_rate'] = time_series['penetration_rate'].clip(upper=1.0)
@@ -182,7 +187,7 @@ class AnalyticsEngine:
             })
         
         return {'trends': trends}
-    
+
     def get_states_list(self) -> Dict[str, List[str]]:
         states = sorted(self.master_data['state'].unique().tolist())
         return {'states': states}
@@ -266,3 +271,7 @@ class AnalyticsEngine:
     
     def get_district_features_df(self) -> pd.DataFrame:
         return self.district_features
+    
+
+    
+
