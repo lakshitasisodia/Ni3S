@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 import uvicorn
+import os
 
 from data_pipeline import DataPipeline
 from analytics_engine import AnalyticsEngine
