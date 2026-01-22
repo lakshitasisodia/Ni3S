@@ -21,6 +21,8 @@ node_modules
 *.sln
 *.sw?
 
-src
+.src
 .env
+.env*.local
+
 
