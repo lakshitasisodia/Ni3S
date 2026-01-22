@@ -9,7 +9,7 @@ from analytics_engine import AnalyticsEngine
 from risk_engine import RiskEngine
 from recommendation_engine import RecommendationEngine
 
-app = FastAPI(title="NI³S - National Identity Inclusion Intelligence System")
+app = FastAPI(title="NIÂ³S - National Identity Inclusion Intelligence System")
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,22 +29,33 @@ async def startup_event():
     global pipeline, analytics, risk_engine, recommendation_engine
     print("Initializing NI³S Backend System...")
     
-    pipeline = DataPipeline()
-    pipeline.load_all_datasets()
-    pipeline.merge_datasets()
-    
-    analytics = AnalyticsEngine(pipeline.master_data)
-    risk_engine = RiskEngine(analytics)
-    recommendation_engine = RecommendationEngine()
-    
-    print("System initialization complete.")
+    try:
+        pipeline = DataPipeline()
+        pipeline.load_all_datasets()
+        pipeline.merge_datasets()
+        
+        analytics = AnalyticsEngine(pipeline.master_data)
+        risk_engine = RiskEngine(analytics)
+        recommendation_engine = RecommendationEngine()
+        
+        print("System initialization complete.")
+    except FileNotFoundError as e:
+        print(f"WARNING: Data files not found: {e}")
+        print("System will start but endpoints will return 503 errors.")
+        print("Please add the required CSV files to the 'data/' directory:")
+        print("  - DEMOGRAPHIC_1.csv through DEMOGRAPHIC_5.csv")
+        print("  - ENROLLMENT_1.csv through ENROLLMENT_3.csv")
+    except Exception as e:
+        print(f"ERROR during initialization: {e}")
+        print("System will start but endpoints may not work correctly.")
 
 @app.get("/")
 def root():
     return {
-        "system": "NI³S - National Identity Inclusion Intelligence System",
-        "status": "operational",
-        "version": "1.0.0"
+        "system": "NIÂ³S - National Identity Inclusion Intelligence System",
+        "status": "operational" if analytics is not None else "data not loaded",
+        "version": "1.0.0",
+        "data_loaded": analytics is not None
     }
 
 @app.get("/api/national/overview")
