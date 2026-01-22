@@ -7,6 +7,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependency directories
+.src
+.env
+.env*.local
 node_modules
 *.local
 
@@ -21,8 +25,5 @@ node_modules
 *.sln
 *.sw?
 
-.src
-.env
-.env*.local
 
 
