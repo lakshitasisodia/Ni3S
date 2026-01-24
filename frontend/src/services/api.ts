@@ -2,8 +2,8 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Retry configuration
-const MAX_RETRIES = 12; // 12 retries * 3 seconds = ~36 seconds max wait
-const RETRY_DELAY = 3000; // 3 seconds between retries
+const MAX_RETRIES = 30; // 12 retries * 3 seconds = ~36 seconds max wait
+const RETRY_DELAY = 5000; // 3 seconds between retries
 
 // ============================================
 // TypeScript Interfaces
