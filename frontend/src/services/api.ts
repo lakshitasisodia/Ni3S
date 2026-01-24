@@ -1,6 +1,10 @@
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// Retry configuration
+const MAX_RETRIES = 12; // 12 retries * 3 seconds = ~36 seconds max wait
+const RETRY_DELAY = 3000; // 3 seconds between retries
+
 // ============================================
 // TypeScript Interfaces
 // ============================================
@@ -148,6 +152,49 @@ export interface StateInsights {
 }
 
 // ============================================
+// Helper Functions
+// ============================================
+
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function fetchWithRetry<T>(
+  url: string,
+  options: RequestInit = {},
+  retries: number = MAX_RETRIES
+): Promise<T> {
+  try {
+    const response = await fetch(url, options);
+    
+    // If 503 (Service Unavailable - backend still initializing), retry
+    if (response.status === 503) {
+      if (retries > 0) {
+        console.log(`Backend is initializing... Retrying in ${RETRY_DELAY/1000}s (${retries} attempts left)`);
+        await wait(RETRY_DELAY);
+        return fetchWithRetry<T>(url, options, retries - 1);
+      } else {
+        throw new Error('Backend initialization timeout. The backend is taking longer than expected to load data. Please refresh the page in a moment.');
+      }
+    }
+    
+    // If other HTTP error, throw immediately
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+    
+    return response.json();
+  } catch (error) {
+    // Network errors - retry a few times
+    if (retries > 0 && error instanceof TypeError && error.message.includes('fetch')) {
+      console.log(`Network error, retrying... (${retries} attempts left)`);
+      await wait(RETRY_DELAY);
+      return fetchWithRetry<T>(url, options, retries - 1);
+    }
+    throw error;
+  }
+}
+
+// ============================================
 // API Service Class
 // ============================================
 
@@ -159,77 +206,68 @@ class ApiService {
   }
 
   async getNationalOverview(): Promise<NationalOverview> {
-    const response = await fetch(`${this.baseUrl}/api/national/overview`);
-    if (!response.ok) throw new Error('Failed to fetch national overview');
-    return response.json();
+    return fetchWithRetry<NationalOverview>(`${this.baseUrl}/api/national/overview`);
   }
 
   async getNationalTrends(): Promise<NationalTrends> {
-    const response = await fetch(`${this.baseUrl}/api/national/trends`);
-    if (!response.ok) throw new Error('Failed to fetch national trends');
-    return response.json();
+    return fetchWithRetry<NationalTrends>(`${this.baseUrl}/api/national/trends`);
   }
 
   async getStates(): Promise<{ states: string[] }> {
-    const response = await fetch(`${this.baseUrl}/api/states`);
-    if (!response.ok) throw new Error('Failed to fetch states');
-    return response.json();
+    return fetchWithRetry<{ states: string[] }>(`${this.baseUrl}/api/states`);
   }
 
   async getDistricts(state: string): Promise<{ state: string; districts: string[] }> {
-    const response = await fetch(
+    return fetchWithRetry<{ state: string; districts: string[] }>(
       `${this.baseUrl}/api/states/${encodeURIComponent(state)}/districts`
     );
-    if (!response.ok) throw new Error(`Failed to fetch districts for ${state}`);
-    return response.json();
   }
 
   async getStateOverview(state: string): Promise<StateOverview> {
-    const response = await fetch(
+    return fetchWithRetry<StateOverview>(
       `${this.baseUrl}/api/states/${encodeURIComponent(state)}/overview`
     );
-    if (!response.ok) throw new Error(`Failed to fetch state overview for ${state}`);
-    return response.json();
   }
 
   async getDistrictFull(state: string, district: string): Promise<DistrictFull> {
-    const response = await fetch(
+    return fetchWithRetry<DistrictFull>(
       `${this.baseUrl}/api/districts/${encodeURIComponent(state)}/${encodeURIComponent(district)}`
     );
-    if (!response.ok) throw new Error(`Failed to fetch district data for ${district}, ${state}`);
-    return response.json();
   }
 
   async getRiskRankings(limit: number = 50): Promise<{ high_risk_districts: RiskDistrictItem[] }> {
-    const response = await fetch(`${this.baseUrl}/api/risk/rankings?limit=${limit}`);
-    if (!response.ok) throw new Error('Failed to fetch risk rankings');
-    return response.json();
+    return fetchWithRetry<{ high_risk_districts: RiskDistrictItem[] }>(
+      `${this.baseUrl}/api/risk/rankings?limit=${limit}`
+    );
   }
 
   async getRiskHeatmap(): Promise<{ heatmap_data: HeatmapItem[] }> {
-    const response = await fetch(`${this.baseUrl}/api/risk/heatmap`);
-    if (!response.ok) throw new Error('Failed to fetch risk heatmap');
-    return response.json();
+    return fetchWithRetry<{ heatmap_data: HeatmapItem[] }>(
+      `${this.baseUrl}/api/risk/heatmap`
+    );
   }
 
   async getRiskDistribution(): Promise<RiskDistribution> {
-    const response = await fetch(`${this.baseUrl}/api/risk/distribution`);
-    if (!response.ok) throw new Error('Failed to fetch risk distribution');
-    return response.json();
+    return fetchWithRetry<RiskDistribution>(`${this.baseUrl}/api/risk/distribution`);
   }
 
   async getPolicyInsights(): Promise<PolicyInsights> {
-    const response = await fetch(`${this.baseUrl}/api/insights/policy`);
-    if (!response.ok) throw new Error('Failed to fetch policy insights');
-    return response.json();
+    return fetchWithRetry<PolicyInsights>(`${this.baseUrl}/api/insights/policy`);
   }
 
   async getStateInsights(state: string): Promise<StateInsights> {
-    const response = await fetch(
+    return fetchWithRetry<StateInsights>(
       `${this.baseUrl}/api/insights/state/${encodeURIComponent(state)}`
     );
-    if (!response.ok) throw new Error(`Failed to fetch state insights for ${state}`);
-    return response.json();
+  }
+
+  // Health check endpoint (useful for checking if backend is ready)
+  async healthCheck(): Promise<{ status: string; server: string; data_loaded: boolean }> {
+    return fetchWithRetry<{ status: string; server: string; data_loaded: boolean }>(
+      `${this.baseUrl}/health`,
+      {},
+      3 // Only retry health check 3 times
+    );
   }
 }
 
