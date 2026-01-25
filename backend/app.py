@@ -81,7 +81,7 @@ async def startup_event():
     
     try:
         print("Loading pre-processed data...")
-        with open('data/processed_data.pkl', 'rb') as f:
+        with open('preprocess.py', 'rb') as f:
             data = pickle.load(f)
         
         # This will be MUCH faster - seconds instead of minutes
