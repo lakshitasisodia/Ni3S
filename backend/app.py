@@ -1,3 +1,4 @@
+from copyreg import pickle
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
@@ -73,6 +74,25 @@ def lazy_init():
         initialization_error = error_msg
     finally:
         is_initializing = False
+
+@app.on_event("startup")
+async def startup_event():
+    global pipeline, analytics, risk_engine, recommendation_engine
+    
+    try:
+        print("Loading pre-processed data...")
+        with open('data/processed_data.pkl', 'rb') as f:
+            data = pickle.load(f)
+        
+        # This will be MUCH faster - seconds instead of minutes
+        analytics = AnalyticsEngine(data['master_data'])
+        analytics.district_features = data['district_features']
+        risk_engine = RiskEngine(analytics)
+        recommendation_engine = RecommendationEngine()
+        
+        print("System ready!")
+    except Exception as e:
+        print(f"Error: {e}")
 
 @app.get("/")
 def root():
